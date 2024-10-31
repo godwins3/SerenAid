@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - neo4j
+    environment:
+      - FLASK_APP=server/wsgi.py
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - IBM_TONE_ANALYZER_API_KEY=${IBM_TONE_ANALYZER_API_KEY}
+      - IBM_TONE_ANALYZER_URL=${IBM_TONE_ANALYZER_URL}
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}

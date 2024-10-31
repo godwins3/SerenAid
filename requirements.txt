@@ -1,0 +1,5 @@
+Flask
+flask-cors
+openai
+ibm-watson
+neo4j
