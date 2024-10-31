@@ -20,7 +20,7 @@ SerenAid is a virtual therapy assistant that leverages advanced AI models and kn
 ### Clone the Repository
 
 ```sh
-git clone https://github.com/yourusername/serenaid.git
+git clone https://github.com/godwins3/serenaid.git
 cd serenaid
 ```
 
@@ -67,9 +67,10 @@ serenaid/
 ├── requirements.txt        # Python dependencies
 ├── server/                 # Flask server code
 │   ├── __init__.py
-│   ├── app.py              # Main Flask app
-│   ├── knowledge_graph.py  # Knowledge graph utilities
-│   ├── resources.py        # Resource recommendation logic
+│   ├── server.py              # Main Flask app
+|   ├── wsgi.py
+│   ├── engine/  # Knowledge graph utilities and Resource recommendation logic
+│   │   └── core.py
 │   └── templates/
 │       ├── base.html       # Base HTML template
 │       └── index.html      # Main HTML template
