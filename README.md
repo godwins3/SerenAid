@@ -5,7 +5,7 @@ SerenAid is a virtual therapy assistant that leverages advanced AI models and kn
 ## Features
 
 - **Conversational AI**: Utilizes OpenAI's language model for generating therapeutic responses.
-- **Emotional Tone Analysis**: Analyzes the user's emotional tone using IBM Tone Analyzer.
+- **Emotional Tone Analysis**: Analyzes the user's emotional tone using a custom model.
 - **Knowledge Graph Integration**: Uses Neo4j to store and query a knowledge graph for contextually rich responses.
 - **Bootstrap Frontend**: Clean and responsive UI built with Bootstrap.
 
@@ -30,8 +30,6 @@ Create a .env file in the root directory and add the following environment varia
 
 ```sh
 OPENAI_API_KEY=your_openai_api_key
-IBM_TONE_ANALYZER_API_KEY=your_ibm_tone_analyzer_api_key
-IBM_TONE_ANALYZER_URL=your_ibm_tone_analyzer_url
 NEO4J_URI=bolt://neo4j:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_neo4j_password
@@ -69,7 +67,7 @@ serenaid/
 │   ├── __init__.py
 │   ├── server.py              # Main Flask app
 |   ├── wsgi.py
-│   ├── engine/  # Knowledge graph utilities and Resource recommendation logic
+│   ├── engine/  # Knowledge graph utilities, emotion prediction and Resource recommendation logic
 │   │   └── core.py
 │   └── templates/
 │       ├── base.html       # Base HTML template
@@ -83,7 +81,7 @@ serenaid/
 
 ## API endpoints
 
-POST /api/message
+POST /api/v1/message
 Handles user messages, performs tone analysis, generates a response using OpenAI, and fetches related concepts from the knowledge graph.
 
 Request:
@@ -114,7 +112,7 @@ Response:
 
 - Backend: Flask, Neo4j
 - Frontend: Bootstrap
-- AI Models: OpenAI, IBM Tone Analyzer
+- AI Models: OpenAI, custom model
 - Containerization: Docker, Docker Compose
 
 ## Contributing
@@ -126,6 +124,5 @@ Contributions are welcome! Please fork the repository and create a pull request 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ```javascript
-
-Replace placeholders such as `your_openai_api_key`, `your_ibm_tone_analyzer_api_key`, `your_ibm_tone_analyzer_url`, and `your_neo4j_password` with your actual credentials and secrets. Also, update the GitHub repository URL in the "Clone the Repository" section to your repository's URL.
+Replace placeholders such as `your_openai_api_key`,  and `your_neo4j_password` with your actual credentials and secrets. Also, update the GitHub repository URL in the "Clone the Repository" section to your repository's URL.
 ```
