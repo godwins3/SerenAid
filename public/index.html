@@ -71,7 +71,7 @@
             appendMessage(userMessage, 'user-message bg-primary text-white rounded p-2');
             inputText.value = '';
 
-            fetch('/api/message', {
+            fetch('/api/v1/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userMessage })
