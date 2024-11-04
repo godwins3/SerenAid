@@ -9,6 +9,7 @@ __pycache__/
 *.db-wal
 *.ini
 *.env
+*.keras
 
 /tests/*
 string_generator.py
