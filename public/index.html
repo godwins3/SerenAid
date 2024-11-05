@@ -11,26 +11,44 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            margin: 0;
         }
         #chat-container {
             flex: 1;
             padding: 20px;
-            overflow-y: scroll;
+            overflow-y: auto;
             background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
         }
         #input-container {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ccc;
+            background-color: #fff;
         }
         .message {
             margin: 10px 0;
+            max-width: 60%;
+            padding: 10px;
+            border-radius: 15px;
+            word-wrap: break-word;
         }
         .user-message {
-            text-align: right;
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
         }
         .assistant-message {
-            text-align: left;
+            align-self: flex-start;
+            background-color: #e9ecef;
+            color: black;
+        }
+        .bg-info {
+            background-color: #17a2b8 !important;
+        }
+        .bg-light {
+            background-color: #f8f9fa !important;
         }
     </style>
 </head>
@@ -68,25 +86,28 @@
             const userMessage = inputText.value;
             if (userMessage.trim() === '') return;
 
-            appendMessage(userMessage, 'user-message bg-primary text-white rounded p-2');
+            appendMessage(userMessage, 'user-message');
             inputText.value = '';
 
-            fetch('/api/v1/message', {
+            fetch('http://127.0.0.1:8000/api/v1/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userMessage })
+                body: JSON.stringify({ 
+                    message: userMessage,
+                    userId: 1,
+                 })
             })
             .then(response => response.json())
             .then(data => {
-                appendMessage(data.message, 'assistant-message bg-secondary text-white rounded p-2');
-                if (data.resources) {
-                    appendMessage('Here are some resources that might help you:', 'assistant-message bg-info text-white rounded p-2');
-                    data.resources.forEach(resource => appendMessage(resource, 'assistant-message bg-light text-dark rounded p-2'));
-                }
-                if (data.related_concepts) {
-                    appendMessage('Here are some related concepts:', 'assistant-message bg-info text-white rounded p-2');
-                    data.related_concepts.forEach(concept => appendMessage(concept, 'assistant-message bg-light text-dark rounded p-2'));
-                }
+                appendMessage(data.message, 'assistant-message');
+                // if (data.resources) {
+                //     appendMessage('Here are some resources that might help you:', 'assistant-message bg-info');
+                //     data.resources.forEach(resource => appendMessage(resource, 'assistant-message bg-light'));
+                // }
+                // if (data.related_concepts) {
+                //     appendMessage('Here are some related concepts:', 'assistant-message bg-info');
+                //     data.related_concepts.forEach(concept => appendMessage(concept, 'assistant-message bg-light'));
+                // }
             })
             .catch(error => console.error('Error:', error));
         }
