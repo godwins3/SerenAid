@@ -3,7 +3,8 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
-from engine.core import get_recommended_resources, get_related_concepts, detect_emotion # get_emotion
+from engine.core import get_recommended_resources, get_related_concepts, detect_emotion, add_concept, add_relationship
+from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -18,12 +19,16 @@ CORS(app)
 # Initialize OpenAI client
 client = OpenAI()
 
-# In-memory storage for conversation history
-conversation_history = {}
+# Initialize MongoDB client
+mongo_uri = os.getenv('MONGO_URI')
+mongo_client = MongoClient(mongo_uri)
+db = mongo_client['chatbot']
+conversation_collection = db['conversations']
+
 
 @app.route('/api/v1/message', methods=['POST'])
 def handle_message():
-    user_id = request.json.get('userId')  # Assume each request includes a user_id
+    user_id = request.json.get('userId')
     user_message = request.json.get('message')
 
     if not user_message:
@@ -35,19 +40,25 @@ def handle_message():
         return jsonify({'error': 'No user_id provided.'}), 400
 
     try:
-        # Get emotion from the user message
+        # Detect emotion from the user message
         emotion = detect_emotion(user_message)
         
         # Get related concepts from the user message
-        related_concepts = get_related_concepts(user_message)
+        related_concepts = get_related_concepts(user_id, user_message)
         related_concepts_text = ', '.join(related_concepts)
 
-        # Prepare the conversation history for the prompt
-        if user_id not in conversation_history:
-            conversation_history[user_id] = []
+        # Add new concepts and relationships to the knowledge graph
+        knowledge_graph.add_concept(user_id, user_message)
+        for concept in related_concepts:
+            knowledge_graph.add_relationship(user_id, user_message, concept)
 
+        # Retrieve conversation history from MongoDB
+        conversation = conversation_collection.find_one({"user_id": user_id})
+        if not conversation:
+            conversation = {"user_id": user_id, "history": []}
+        
         # Append the user's message to the conversation history
-        conversation_history[user_id].append({"role": "user", "content": user_message})
+        conversation['history'].append({"role": "user", "content": user_message})
 
         # Create a dynamic prompt including emotion and related concepts
         dynamic_prompt = (
@@ -55,24 +66,29 @@ def handle_message():
             f"User says: {user_message}"
         )
 
-        # Prepare messages for the OpenAI API call
+        # Prepare messages for the OpenAI API call, limiting to the last few messages to save tokens
+        history = conversation['history'][-10:]  # Limit history to the last 10 messages
         messages = [
             {"role": "system", "content": "You are a virtual therapist. Engage in a supportive conversation with the user."},
             {"role": "user", "content": dynamic_prompt}
-        ] + conversation_history[user_id]
+        ] + history
 
         # Generate a response from OpenAI API
         output = client.chat.completions.create(
-            model="gpt-4",  # Make sure to use a valid model name
-            messages=messages
+            model="gpt-4",  # Use a cheaper model if possible
+            messages=messages,
+            max_tokens=150  # Limit the response length to save costs
         )
 
         # Get the generated message from the response
         generated_message = output.choices[0].message.content
-        conversation_history[user_id].append({"role": "assistant", "content": generated_message})
-        
+        conversation['history'].append({"role": "assistant", "content": generated_message})
+
+        # Update the conversation history in MongoDB
+        conversation_collection.update_one({"user_id": user_id}, {"$set": conversation}, upsert=True)
+
         # Get recommended resources
-        resources = get_recommended_resources(emotion)
+        resources = get_recommended_resources([emotion])
 
         return jsonify({
             'message': generated_message,
