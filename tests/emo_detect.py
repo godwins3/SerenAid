@@ -4,6 +4,8 @@ from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
 import os
 
+from transformers import pipeline
+
 def get_emotion(message):
     base_path = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_path, 'emo.keras')
@@ -27,6 +29,29 @@ def get_emotion(message):
     
     return predicted_label
 
-user_message = "I love you"
-emotion = get_emotion(user_message)
-print(emotion)
+
+
+def detect_emotion(message):
+    classifier = pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
+    results = classifier(message)
+    highest_score = 0
+    highest_label = ""
+
+    for result in results[0]:
+        if result['score'] > highest_score:
+            highest_score = result['score']
+            highest_label = result['label']
+
+    return highest_label
+
+
+
+if __name__ =="__main__":
+    # test custom model
+    user_message = "I love you"
+    emotion = get_emotion(user_message)
+    print(emotion)
+
+    # test huggingface model 
+    emotion = detect_emotion(user_message)
+    print(emotion)
