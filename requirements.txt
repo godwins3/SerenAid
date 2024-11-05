@@ -1,5 +1,5 @@
-Flask
-flask-cors
-openai
-tensorflow
-neo4j
+Flask==3.0.3
+flask-cors==5.0.0
+openai==1.54.0
+tensorflow==2.18.0
+neo4j==5.26.0

@@ -2,10 +2,33 @@ from neo4j import GraphDatabase
 from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
 from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
+import os
+import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+neo4j_uri = os.getenv('NEO4J_URI')
+neo4j_user = os.getenv('NEO4J_USER')
+neo4j_password = os.getenv('NEO4J_PASSWORD')
+
 
 class KnowledgeGraph:
     def __init__(self, uri, user, password):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        # Verify the connection
+        try:
+            with self.driver.session() as session:
+                result = session.run("RETURN 1")
+                for record in result:
+                    print(record)
+            print("Connection successful")
+        except Exception as e:
+            print(f"Authentication failed: {e}")
+        finally:
+            self.driver.close()
 
     def close(self):
         self.driver.close()
@@ -20,8 +43,7 @@ class KnowledgeGraph:
             return [record["concept"] for record in result]
 
 # Instantiate and use the KnowledgeGraph class
-knowledge_graph = KnowledgeGraph("neo4j://localhost:7687", "neo4j", "your_password")
-
+knowledge_graph = KnowledgeGraph(neo4j_uri, neo4j_user, neo4j_password)
 def get_related_concepts(message):
     return knowledge_graph.get_related_concepts(message)
 
@@ -43,7 +65,9 @@ def get_recommended_resources(tones):
     return resources
 
 def get_emotion(message):
-    loaded_model = load_model('../../models/emo.keras') 
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_path, 'emo.keras')
+    loaded_model = load_model(model_path)
 
     tokenizer = Tokenizer(num_words=50000)
     sequences = tokenizer.texts_to_sequences([message])

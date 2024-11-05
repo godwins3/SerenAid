@@ -8,8 +8,6 @@ services:
     environment:
       - FLASK_APP=server/wsgi.py
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - IBM_TONE_ANALYZER_API_KEY=${IBM_TONE_ANALYZER_API_KEY}
-      - IBM_TONE_ANALYZER_URL=${IBM_TONE_ANALYZER_URL}
       - NEO4J_URI=${NEO4J_URI}
       - NEO4J_USER=${NEO4J_USER}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
