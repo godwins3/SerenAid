@@ -16,6 +16,7 @@ classifier = pipeline("text-classification", model="j-hartmann/emotion-english-d
 class KnowledgeGraph:
     def __init__(self, uri, user, password):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.graphs = {}  # Store separate graphs for each therapist
         try:
             with self.driver.session() as session:
                 result = session.run("RETURN 1")
@@ -29,8 +30,13 @@ class KnowledgeGraph:
     def close(self):
         self.driver.close()
 
-    def get_related_concepts(self, user_id, message):
-        with self.driver.session() as session:
+    def get_graph(self, therapist):
+        if therapist not in self.graphs:
+            self.graphs[therapist] = self.driver.session()
+        return self.graphs[therapist]
+
+    def get_related_concepts(self, therapist, user_id, message):
+        with self.get_graph(therapist) as session:
             result = session.run("""
                 MATCH (u:User {id: $user_id})-[:INTERESTED_IN]->(n:Concept)-[:RELATED_TO]->(related:Concept)
                 WHERE n.name = $message
@@ -38,16 +44,16 @@ class KnowledgeGraph:
             """, user_id=user_id, message=message)
             return [record["concept"] for record in result]
 
-    def add_concept(self, user_id, concept):
-        with self.driver.session() as session:
+    def add_concept(self, therapist, user_id, concept):
+        with self.get_graph(therapist) as session:
             session.run("""
                 MERGE (u:User {id: $user_id})
                 MERGE (c:Concept {name: $concept})
                 MERGE (u)-[:INTERESTED_IN]->(c)
             """, user_id=user_id, concept=concept)
 
-    def add_relationship(self, user_id, concept1, concept2):
-        with self.driver.session() as session:
+    def add_relationship(self, therapist, user_id, concept1, concept2):
+        with self.get_graph(therapist) as session:
             session.run("""
                 MATCH (u:User {id: $user_id})-[:INTERESTED_IN]->(c1:Concept {name: $concept1})
                 MERGE (c2:Concept {name: $concept2})
@@ -57,15 +63,15 @@ class KnowledgeGraph:
 # Instantiate and use the KnowledgeGraph class
 knowledge_graph = KnowledgeGraph(neo4j_uri, neo4j_user, neo4j_password)
 
-def get_related_concepts(user_id, message):
-    return knowledge_graph.get_related_concepts(user_id, message)
+def get_related_concepts(therapist, user_id, message):
+    return knowledge_graph.get_related_concepts(therapist, user_id, message)
 
-def add_concept(user_id, concept_name):
-    knowledge_graph.add_concept(user_id, concept_name)
+def add_concept(therapist, user_id, concept_name):
+    knowledge_graph.add_concept(therapist, user_id, concept_name)
 
-def add_relationship(user_id, concept1, concept2):
-    knowledge_graph.add_relationship(user_id, concept1, concept2)
-
+def add_relationship(therapist, user_id, concept1, concept2):
+    knowledge_graph.add_relationship(therapist, user_id, concept1, concept2)
+    
 resources_database = {
     "Joy": ["https://www.positivepsychology.com/what-is-joy/", "https://www.psychologytoday.com/us/basics/joy"],
     "Anger": ["https://www.verywellmind.com/how-to-deal-with-anger-5098315", "https://www.helpguide.org/articles/relationships-communication/anger-management.htm"],

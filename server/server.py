@@ -6,6 +6,7 @@ from openai import OpenAI
 from engine.core import get_recommended_resources, get_related_concepts, detect_emotion, add_concept, add_relationship
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,11 +26,19 @@ mongo_client = MongoClient(mongo_uri)
 db = mongo_client['chatbot']
 conversation_collection = db['conversations']
 
+therapists_file_path = 'server\engine\therapists\persona.json'
+def read_json(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
+
+therapists = read_json(therapists_file_path)
 
 @app.route('/api/v1/message', methods=['POST'])
 def handle_message():
     user_id = request.json.get('userId')
     user_message = request.json.get('message')
+    selected_therapist = request.json.get('therapist', 'emily')  # Default to Emily if not specified
 
     if not user_message:
         logging.error("No message provided in the request.")
@@ -44,13 +53,13 @@ def handle_message():
         emotion = detect_emotion(user_message)
         
         # Get related concepts from the user message
-        related_concepts = get_related_concepts(user_id, user_message)
+        related_concepts = get_related_concepts(selected_therapist, user_id, user_message)
         related_concepts_text = ', '.join(related_concepts)
 
         # Add new concepts and relationships to the knowledge graph
-        knowledge_graph.add_concept(user_id, user_message)
+        add_concept(selected_therapist, user_id, user_message)
         for concept in related_concepts:
-            knowledge_graph.add_relationship(user_id, user_message, concept)
+            add_relationship(selected_therapist, user_id, user_message, concept)
 
         # Retrieve conversation history from MongoDB
         conversation = conversation_collection.find_one({"user_id": user_id})
@@ -60,8 +69,10 @@ def handle_message():
         # Append the user's message to the conversation history
         conversation['history'].append({"role": "user", "content": user_message})
 
-        # Create a dynamic prompt including emotion and related concepts
+        # Create a dynamic prompt including emotion, related concepts, and therapist persona
+        therapist_persona = therapists[selected_therapist]["persona"]
         dynamic_prompt = (
+            f"{therapist_persona}\n"
             f"The user feels {emotion}. Related concepts are: {related_concepts_text}.\n"
             f"User says: {user_message}"
         )
@@ -100,6 +111,6 @@ def handle_message():
     except Exception as e:
         logging.error(f"Error while processing the message: {e}")
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
-
+        
 if __name__ == '__main__':
     app.run(port=8000, debug=True)
